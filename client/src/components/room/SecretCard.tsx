@@ -11,11 +11,14 @@ interface SecretCardProps {
  *
  * 라이어에게도 같은 모양으로 (다른) 단어가 나감. 그래서 이 카드를 보는 것만으로는 자신이
  * 라이어인지 알 수 없고, 그 점이 이 게임의 핵심임. 안내 문구도 역할을 암시하지 않게 씀.
+ *
+ * shrink-0 을 두는 이유는, 화면 높이가 고정된 뒤로 이 카드가 세로 flex 의 한 칸이 되었기
+ * 때문임. 낮은 화면에서는 flex 가 이 칸을 내용보다 작게 눌러 제시어가 잘려 버림.
  */
 export function SecretCard({ secret, emphasized }: SecretCardProps) {
   return (
     <div
-      className="panel relative overflow-hidden px-4 py-3 transition-all duration-500"
+      className="panel relative shrink-0 overflow-hidden px-4 py-3 transition-all duration-500"
       style={{
         borderColor: emphasized ? 'var(--lamp-500)' : 'var(--edge)',
         boxShadow: emphasized

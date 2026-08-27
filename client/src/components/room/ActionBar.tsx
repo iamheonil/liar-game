@@ -85,7 +85,7 @@ export function ActionBar({ room, meId, onSend }: ActionBarProps) {
           <IdleNotice
             text={
               votedName
-                ? `${votedName} 님을 지목했습니다. 시간 안에는 바꿀 수 있습니다.`
+                ? `${votedName} 님 지목함 — 시간 안에는 바꿀 수 있습니다`
                 : '위 참가자 목록에서 라이어로 의심되는 사람을 누르세요.'
             }
             tone="tense"

@@ -19,7 +19,7 @@ export function WaitingControls({ room, meId, onSend }: WaitingControlsProps) {
   const canStart = readyCount >= room.minPlayers
 
   return (
-    <Panel title="대기실" bodyClassName="px-4 py-4">
+    <Panel title="대기실" className="shrink-0" bodyClassName="px-4 py-4">
       <div className="flex flex-col gap-4">
         <div>
           <p className="mb-2 text-xs text-bone-700">라운드 수</p>

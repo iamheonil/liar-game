@@ -12,6 +12,7 @@ import type { JoinTicket } from '@/types/protocol'
 
 const NICKNAME_KEY = 'liar.nickname'
 const TICKET_PREFIX = 'liar.ticket.'
+const SOUND_KEY = 'liar.sound'
 
 function safeRead(store: Storage, key: string): string | null {
   try {
@@ -61,4 +62,18 @@ export function saveTicket(ticket: JoinTicket): void {
 
 export function clearTicket(roomId: string): void {
   safeRemove(sessionStorage, TICKET_PREFIX + roomId)
+}
+
+/**
+ * 소리를 켤지 여부.
+ *
+ * 저장된 값이 없으면 켜 둠. 다만 브라우저 정책상 사용자가 화면을 한 번 건드리기 전에는 어차피
+ * 아무 소리도 나지 않으므로, 이 기본값이 갑자기 소리를 터뜨리는 일은 없음.
+ */
+export function loadSoundEnabled(): boolean {
+  return safeRead(localStorage, SOUND_KEY) !== 'off'
+}
+
+export function saveSoundEnabled(enabled: boolean): void {
+  safeWrite(localStorage, SOUND_KEY, enabled ? 'on' : 'off')
 }
