@@ -1,0 +1,53 @@
+/*
+ * 디자인 토큰.
+ *
+ * 방향: 불 꺼진 방 한가운데 전구 하나가 책상을 비추는 장면. 색은 세 갈래로만 씀.
+ *   - 어둠(ink)     : 배경과 깊이
+ *   - 등불(lamp)    : 시선을 끌어야 하는 것 (내 차례, 남은 시간, 방장)
+ *   - 피(blood)     : 되돌릴 수 없는 것 (투표, 처형, 라이어)
+ * 이 세 가지를 벗어난 색은 쓰지 않아서 화면이 장식적으로 흐트러지지 않게 함.
+ */
+:root {
+  color-scheme: dark;
+
+  --ink-900: #070605;
+  --ink-800: #0d0b09;
+  --ink-700: #14110d;
+  --ink-600: #1c1712;
+  --ink-500: #262019;
+  --ink-400: #332b22;
+
+  --lamp-400: #f7d89a;
+  --lamp-500: #edc06a;
+  --lamp-600: #c99a45;
+  --lamp-700: #8a6a30;
+
+  --blood-400: #d24b4b;
+  --blood-500: #a52727;
+  --blood-600: #7d1a1a;
+  --blood-700: #4d1010;
+
+  --bone-100: #f2ece1;
+  --bone-300: #d8cebd;
+  --bone-500: #9a9082;
+  --bone-700: #635b50;
+
+  --edge: color-mix(in oklab, var(--lamp-600) 18%, transparent);
+  --edge-strong: color-mix(in oklab, var(--lamp-500) 42%, transparent);
+
+  --font-display: 'Gowun Batang', 'Noto Serif KR', serif;
+  --font-body: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur-base: 260ms;
+  --dur-slow: 520ms;
+
+  /* iOS 노치와 홈 인디케이터를 피하기 위한 여백 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

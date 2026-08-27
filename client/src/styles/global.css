@@ -1,0 +1,336 @@
+@import 'tailwindcss';
+@import './theme.css';
+
+/*
+ * 타일윈드 v4 는 테마 변수를 CSS 에서 직접 선언함.
+ * 여기 등록한 값만 유틸리티 클래스(bg-ink-700 등)로 쓸 수 있음.
+ */
+@theme {
+  --color-ink-900: #070605;
+  --color-ink-800: #0d0b09;
+  --color-ink-700: #14110d;
+  --color-ink-600: #1c1712;
+  --color-ink-500: #262019;
+  --color-ink-400: #332b22;
+
+  --color-lamp-400: #f7d89a;
+  --color-lamp-500: #edc06a;
+  --color-lamp-600: #c99a45;
+  --color-lamp-700: #8a6a30;
+
+  --color-blood-400: #d24b4b;
+  --color-blood-500: #a52727;
+  --color-blood-600: #7d1a1a;
+  --color-blood-700: #4d1010;
+
+  --color-bone-100: #f2ece1;
+  --color-bone-300: #d8cebd;
+  --color-bone-500: #9a9082;
+  --color-bone-700: #635b50;
+
+  --font-display: 'Gowun Batang', 'Noto Serif KR', serif;
+  --font-body: 'Noto Sans KR', system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--ink-900);
+  color: var(--bone-300);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* 모바일 브라우저 주소창 높이 변화에 흔들리지 않는 전체 화면 */
+.screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* 터치 기기에서 눌렀을 때 회색 사각형이 번쩍이는 기본 동작 제거 */
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--lamp-500);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--lamp-700);
+  color: var(--bone-100);
+}
+
+/* ------------------------------------------------------------------ 분위기 */
+
+/*
+ * 방 전체를 덮는 세 겹의 광원 연출.
+ *   1) lamp-glow — 천장 전구에서 아래로 떨어지는 빛
+ *   2) vignette  — 가장자리로 갈수록 삼켜지는 어둠
+ *   3) grain     — 오래된 필름 질감. 평평한 어둠에 밀도를 줌
+ * 모두 고정 위치라 스크롤해도 조명이 따라오지 않음.
+ */
+.atmosphere {
+  position: relative;
+  isolation: isolate;
+}
+
+.atmosphere::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      120% 65% at 50% -12%,
+      color-mix(in oklab, var(--lamp-500) 22%, transparent) 0%,
+      color-mix(in oklab, var(--lamp-700) 10%, transparent) 34%,
+      transparent 68%
+    ),
+    radial-gradient(140% 120% at 50% 50%, transparent 28%, var(--ink-900) 96%),
+    linear-gradient(180deg, var(--ink-800) 0%, var(--ink-900) 100%);
+  animation: lamp-flicker 7s ease-in-out infinite;
+}
+
+.atmosphere::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 전구가 미세하게 흔들리는 느낌. 눈에 띄면 산만해지므로 진폭을 아주 좁게 잡음 */
+@keyframes lamp-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  42% {
+    opacity: 0.965;
+  }
+  46% {
+    opacity: 1;
+  }
+  73% {
+    opacity: 0.98;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere::before {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ 스크롤 */
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-400) transparent;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--ink-400);
+  border-radius: 999px;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------ 반복 구성요소 */
+
+/*
+ * 패널은 이 게임의 기본 표면. 위쪽에서 빛을 받는 것처럼 보이도록
+ * 상단에 밝은 실선 한 줄을 두고 아래로 갈수록 어두워지게 함.
+ */
+.panel {
+  position: relative;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--lamp-600) 7%, var(--ink-600)) 0%,
+      var(--ink-700) 46%,
+      var(--ink-800) 100%
+    );
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--lamp-400) 14%, transparent) inset,
+    0 18px 40px -24px rgb(0 0 0 / 0.9);
+}
+
+.panel-flat {
+  background: color-mix(in oklab, var(--ink-800) 88%, black);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-md);
+}
+
+.rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--edge-strong), transparent);
+}
+
+/* 제목용. 자간을 넓혀 간판처럼 읽히게 함 */
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--lamp-600);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px; /* 손가락으로 정확히 누를 수 있는 최소 크기 */
+  padding: 0 1.15rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-md);
+  background: var(--ink-600);
+  color: var(--bone-300);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out-expo),
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--ink-500);
+  border-color: var(--edge-strong);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--lamp-500), var(--lamp-600));
+  border-color: var(--lamp-400);
+  color: var(--ink-900);
+  font-weight: 700;
+  box-shadow: 0 0 26px -6px color-mix(in oklab, var(--lamp-500) 60%, transparent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--lamp-400), var(--lamp-500));
+  border-color: var(--lamp-400);
+}
+
+.btn-danger {
+  background: linear-gradient(180deg, var(--blood-500), var(--blood-600));
+  border-color: var(--blood-400);
+  color: var(--bone-100);
+  font-weight: 700;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--blood-400), var(--blood-500));
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--bone-500);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--ink-700);
+  color: var(--bone-300);
+}
+
+.field {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 0.9rem;
+  background: var(--ink-900);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-md);
+  color: var(--bone-100);
+  font-size: 16px; /* iOS 는 16px 미만 입력창에 자동 확대를 걸어 버림 */
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.field::placeholder {
+  color: var(--bone-700);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--lamp-600);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lamp-600) 18%, transparent);
+}
+
+/* 숫자가 1초마다 흔들리지 않도록 고정폭 숫자 사용 */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* 지금 주목해야 할 것(내 차례, 마지막 5초)에만 쓰는 맥박 */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

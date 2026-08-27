@@ -1,0 +1,24 @@
+# 빌드 산출물
+dist/
+build/
+out/
+
+# 의존성
+node_modules/
+.gradle/
+
+# 에디터·OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# 로그와 임시 파일
+*.log
+*.tsbuildinfo
+.env
+.env.local
+
+# Gradle 래퍼는 저장소에 포함해야 함 (.gradle/ 캐시만 제외)
+!gradle/wrapper/gradle-wrapper.jar

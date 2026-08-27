@@ -1,0 +1,41 @@
+# 윈도우와 macOS 어디서든 같은 명령으로 뜨는 2컨테이너 구성.
+#
+#   docker compose up --build     실행
+#   http://localhost:8080         접속
+#
+# web(nginx) 이 정적 파일을 서빙하면서 /api 와 /ws 를 api 컨테이너로 넘김.
+# 그래서 브라우저에는 포트가 하나만 노출되고, 같은 공유기에 붙은 휴대폰에서도
+# http://<PC의 IP>:8080 으로 바로 들어올 수 있음.
+
+services:
+  api:
+    build:
+      context: ./server
+    container_name: liargame-api
+    restart: unless-stopped
+    environment:
+      # 항상 nginx 를 거쳐 같은 출처로 들어오므로 교차 출처 요청을 열어 둘 필요가 없음
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      TZ: Asia/Seoul
+      LOGGING_LEVEL_COM_LIARGAME: ${API_LOG_LEVEL:-INFO}
+    expose:
+      - '8080'
+    networks:
+      - liargame
+
+  web:
+    build:
+      context: ./client
+    container_name: liargame-web
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - liargame
+
+networks:
+  liargame:
+    driver: bridge

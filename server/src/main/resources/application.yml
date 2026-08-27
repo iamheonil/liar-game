@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: liar-game
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+  shutdown: graceful
+  # 프록시(nginx) 뒤에서 원래 요청 정보를 보존하기 위함
+  forward-headers-strategy: framework
+
+app:
+  cors:
+    # 개발 중 Vite 개발 서버에서 붙을 수 있도록 열어 둠.
+    # 인증이 없는 파티 게임이라 공개 배포 시에도 실질적 위험은 없으나,
+    # 특정 도메인만 허용하려면 이 값을 바꾸면 됨.
+    allowed-origins: ${ALLOWED_ORIGINS:*}
+
+logging:
+  level:
+    com.liargame: INFO
