@@ -13,6 +13,8 @@ import type { JoinTicket } from '@/types/protocol'
 const NICKNAME_KEY = 'liar.nickname'
 const TICKET_PREFIX = 'liar.ticket.'
 const SOUND_KEY = 'liar.sound'
+const MUSIC_VOLUME_KEY = 'liar.volume.music'
+const SFX_VOLUME_KEY = 'liar.volume.sfx'
 
 function safeRead(store: Storage, key: string): string | null {
   try {
@@ -76,4 +78,33 @@ export function loadSoundEnabled(): boolean {
 
 export function saveSoundEnabled(enabled: boolean): void {
   safeWrite(localStorage, SOUND_KEY, enabled ? 'on' : 'off')
+}
+
+/**
+ * 배경음·효과음 음량. 0 ~ 1.
+ *
+ * 저장된 값이 없거나 숫자로 읽히지 않으면 1 로 봄. 손잡이를 만지지 않은 사람은 원래 설계한
+ * 크기 그대로 듣게 되고, 저장소가 막힌 환경에서도 소리가 사라지지 않음.
+ */
+function loadVolume(key: string): number {
+  const raw = safeRead(localStorage, key)
+  if (raw === null) return 1
+  const value = Number(raw)
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 1
+}
+
+export function loadMusicVolume(): number {
+  return loadVolume(MUSIC_VOLUME_KEY)
+}
+
+export function saveMusicVolume(level: number): void {
+  safeWrite(localStorage, MUSIC_VOLUME_KEY, String(level))
+}
+
+export function loadSfxVolume(): number {
+  return loadVolume(SFX_VOLUME_KEY)
+}
+
+export function saveSfxVolume(level: number): void {
+  safeWrite(localStorage, SFX_VOLUME_KEY, String(level))
 }

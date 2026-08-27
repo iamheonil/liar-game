@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { SoundControls } from '@/components/room/SoundControls'
 import { Countdown } from '@/components/ui/Countdown'
+import type { SoundSettings } from '@/hooks/useSoundSettings'
 import { PHASE_META } from '@/lib/phase'
 import type { RoomView } from '@/types/protocol'
 
@@ -9,38 +11,7 @@ interface RoomHeaderProps {
   connected: boolean
   canLeave: boolean
   onLeave: () => void
-  soundOn: boolean
-  onToggleSound: () => void
-}
-
-/**
- * 소리 켬/끔 아이콘.
- *
- * 이 게임은 이미지 파일을 하나도 쓰지 않으므로 아이콘도 선으로 직접 그림.
- */
-function SpeakerIcon({ on }: { on: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M4 8 h3 l4 -3.2 v10.4 l-4 -3.2 h-3 z" />
-      {on ? (
-        <>
-          <path d="M13.6 7.2 a3.8 3.8 0 0 1 0 5.6" />
-          <path d="M15.9 5 a7 7 0 0 1 0 10" />
-        </>
-      ) : (
-        <path d="M14 8 l4 4 M18 8 l-4 4" />
-      )}
-    </svg>
-  )
+  sound: SoundSettings
 }
 
 /**
@@ -58,8 +29,7 @@ export function RoomHeader({
   connected,
   canLeave,
   onLeave,
-  soundOn,
-  onToggleSound,
+  sound,
 }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false)
   const meta = room.game ? PHASE_META[room.game.phase] : null
@@ -90,16 +60,7 @@ export function RoomHeader({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onToggleSound}
-            className="btn btn-ghost min-h-0 px-1.5 py-1"
-            style={{ color: soundOn ? 'var(--lamp-600)' : 'var(--bone-700)' }}
-            aria-pressed={soundOn}
-            title={soundOn ? '소리 끄기' : '소리 켜기'}
-          >
-            <SpeakerIcon on={soundOn} />
-          </button>
+          <SoundControls settings={sound} />
           <span
             className="h-2 w-2 rounded-full"
             title={connected ? '연결됨' : '연결 끊김 — 자동으로 다시 시도 중'}

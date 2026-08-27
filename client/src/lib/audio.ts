@@ -45,8 +45,24 @@ const MIN_BEAT_MS = 360
 
 type WindowWithLegacyAudio = Window & { webkitAudioContext?: typeof AudioContext }
 
+/**
+ * 막대 위치(0~1)를 실제 게인으로 옮김.
+ *
+ * 사람 귀는 진폭에 선형으로 반응하지 않아서, 막대를 절반으로 내려도 게인을 절반으로 줄이면
+ * 별로 줄어든 것 같지 않게 들림. 제곱을 걸면 손이 움직인 만큼 줄어드는 느낌에 가까워짐.
+ */
+function curve(level: number): number {
+  const clamped = Math.min(1, Math.max(0, level))
+  return clamped * clamped
+}
+
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
+/* 배경음(드론·심장박동)과 효과음(큐)을 따로 조절하기 위해 갈래를 나눠 둠 */
+let musicBus: GainNode | null = null
+let sfxBus: GainNode | null = null
+let musicVolume = 1
+let sfxVolume = 1
 let noiseBuffer: AudioBuffer | null = null
 let enabled = true
 
@@ -95,6 +111,7 @@ function airBuffer(context: AudioContext): AudioBuffer {
  */
 function blip(
   context: AudioContext,
+  bus: GainNode,
   options: {
     type: OscillatorType
     from: number
@@ -121,7 +138,7 @@ function blip(
   gain.gain.exponentialRampToValueAtTime(0.0001, start + options.decay)
 
   osc.connect(gain)
-  gain.connect(master as GainNode)
+  gain.connect(bus)
   osc.start(start)
   osc.stop(start + options.decay + 0.04)
 }
@@ -129,6 +146,7 @@ function blip(
 /** 노이즈를 짧게 끊어 만든 타격음. 문 닫히는 소리, 표가 꽂히는 소리에 씀 */
 function hit(
   context: AudioContext,
+  bus: GainNode,
   options: { cutoff: number; type: BiquadFilterType; gain: number; at?: number; decay: number },
 ): void {
   const start = context.currentTime + (options.at ?? 0)
@@ -147,15 +165,16 @@ function hit(
 
   source.connect(filter)
   filter.connect(gain)
-  gain.connect(master as GainNode)
+  gain.connect(bus)
   source.start(start)
   source.stop(start + options.decay + 0.04)
 }
 
 /** 심장 한 번. 두 번 치는 것이 한 박이라 '쿵-쿵' 사이 간격이 중요함 */
 function beat(context: AudioContext): void {
-  blip(context, { type: 'sine', from: 92, to: 34, gain: 0.55, decay: 0.2 })
-  blip(context, { type: 'sine', from: 78, to: 30, gain: 0.32, at: 0.19, decay: 0.22 })
+  if (!musicBus) return
+  blip(context, musicBus, { type: 'sine', from: 92, to: 34, gain: 0.55, decay: 0.2 })
+  blip(context, musicBus, { type: 'sine', from: 78, to: 30, gain: 0.32, at: 0.19, decay: 0.22 })
 }
 
 /** 다음 한 번만 예약함. 예약 시점의 최신 간격을 읽으므로 가속이 매끄럽게 반영됨 */
@@ -171,7 +190,7 @@ function scheduleBeat(): void {
 }
 
 function startDrone(context: AudioContext): void {
-  if (drone) return
+  if (drone || !musicBus) return
 
   const gain = context.createGain()
   const filter = context.createBiquadFilter()
@@ -202,9 +221,16 @@ function startDrone(context: AudioContext): void {
   air.start()
 
   filter.connect(gain)
-  gain.connect(master as GainNode)
+  gain.connect(musicBus as GainNode)
 
   drone = { voices, filter, gain, air }
+}
+
+/** 손잡이를 움직이는 동안 지지직거리지 않도록 아주 짧게 이어 붙임 */
+function ramp(bus: GainNode | null, value: number): void {
+  if (!bus || !ctx) return
+  bus.gain.cancelScheduledValues(ctx.currentTime)
+  bus.gain.linearRampToValueAtTime(value, ctx.currentTime + 0.04)
 }
 
 function stopDrone(): void {
@@ -237,11 +263,22 @@ export const sound = {
       master = ctx.createGain()
       master.gain.value = MASTER_GAIN
       master.connect(ctx.destination)
+
+      musicBus = ctx.createGain()
+      musicBus.gain.value = curve(musicVolume)
+      musicBus.connect(master)
+
+      sfxBus = ctx.createGain()
+      sfxBus.gain.value = curve(sfxVolume)
+      sfxBus.connect(master)
+
       void ctx.resume()
     } catch {
       // 오디오를 열 수 없는 환경에서도 게임은 그대로 돌아가야 하므로 삼킴
       ctx = null
       master = null
+      musicBus = null
+      sfxBus = null
     }
   },
 
@@ -318,50 +355,68 @@ export const sound = {
 
   cue(name: CueName): void {
     const context = audio()
-    if (!context) return
+    if (!context || !sfxBus) return
+    const bus = sfxBus
 
     switch (name) {
       // 장면이 바뀌는 낮은 숨소리. 매 단계마다 울리므로 가장 조용해야 함
       case 'phase':
-        hit(context, { type: 'lowpass', cutoff: 900, gain: 0.16, decay: 0.4 })
-        blip(context, { type: 'sine', from: 160, to: 70, gain: 0.1, decay: 0.36 })
+        hit(context, bus, { type: 'lowpass', cutoff: 900, gain: 0.16, decay: 0.4 })
+        blip(context, bus, { type: 'sine', from: 160, to: 70, gain: 0.1, decay: 0.36 })
         break
 
       // 내 차례. 유일하게 밝은 소리라 다른 무엇과도 헷갈리지 않음
       case 'turn':
-        blip(context, { type: 'sine', from: 880, gain: 0.16, decay: 0.5 })
-        blip(context, { type: 'sine', from: 1320, gain: 0.07, at: 0.06, decay: 0.42 })
+        blip(context, bus, { type: 'sine', from: 880, gain: 0.16, decay: 0.5 })
+        blip(context, bus, { type: 'sine', from: 1320, gain: 0.07, at: 0.06, decay: 0.42 })
         break
 
       // 표가 꽂히는 마른 소리
       case 'vote':
-        hit(context, { type: 'highpass', cutoff: 2400, gain: 0.1, decay: 0.07 })
+        hit(context, bus, { type: 'highpass', cutoff: 2400, gain: 0.1, decay: 0.07 })
         break
 
       // 지목 확정. 아래로 미끄러지는 음이 '결정되었다'는 인상을 줌
       case 'accuse':
-        blip(context, { type: 'sawtooth', from: 320, to: 96, gain: 0.14, decay: 0.5 })
-        hit(context, { type: 'lowpass', cutoff: 1400, gain: 0.2, decay: 0.3 })
+        blip(context, bus, { type: 'sawtooth', from: 320, to: 96, gain: 0.14, decay: 0.5 })
+        hit(context, bus, { type: 'lowpass', cutoff: 1400, gain: 0.2, decay: 0.3 })
         break
 
       // 처형 가결. 이 게임에서 가장 무거운 한 방
       case 'execute':
-        blip(context, { type: 'sine', from: 130, to: 28, gain: 0.7, decay: 0.7 })
-        hit(context, { type: 'lowpass', cutoff: 600, gain: 0.32, decay: 0.5 })
+        blip(context, bus, { type: 'sine', from: 130, to: 28, gain: 0.7, decay: 0.7 })
+        hit(context, bus, { type: 'lowpass', cutoff: 600, gain: 0.32, decay: 0.5 })
         break
 
       // 라이어 승. 단3도로 내려가 닫히는 느낌
       case 'liar':
-        blip(context, { type: 'triangle', from: 392, gain: 0.16, decay: 0.5 })
-        blip(context, { type: 'triangle', from: 311, gain: 0.16, at: 0.16, decay: 0.9 })
+        blip(context, bus, { type: 'triangle', from: 392, gain: 0.16, decay: 0.5 })
+        blip(context, bus, { type: 'triangle', from: 311, gain: 0.16, at: 0.16, decay: 0.9 })
         break
 
       // 시민 승. 완전5도로 올라가 열리는 느낌
       case 'citizen':
-        blip(context, { type: 'triangle', from: 392, gain: 0.15, decay: 0.5 })
-        blip(context, { type: 'triangle', from: 587, gain: 0.15, at: 0.16, decay: 0.9 })
+        blip(context, bus, { type: 'triangle', from: 392, gain: 0.15, decay: 0.5 })
+        blip(context, bus, { type: 'triangle', from: 587, gain: 0.15, at: 0.16, decay: 0.9 })
         break
     }
+  },
+
+  /**
+   * 배경음(드론·심장박동) 음량. 0 ~ 1.
+   *
+   * 갈래를 둘로 나눈 이유는, 깔려 있는 소리는 부담스러워도 결정의 순간을 알려 주는 소리는
+   * 남기고 싶은 사람이 있기 때문임. 한 손잡이로 묶으면 그 선택을 할 수 없음.
+   */
+  setMusicVolume(level: number): void {
+    musicVolume = level
+    ramp(musicBus, curve(level))
+  },
+
+  /** 효과음(단계 전환·차례·투표·처형) 음량. 0 ~ 1 */
+  setSfxVolume(level: number): void {
+    sfxVolume = level
+    ramp(sfxBus, curve(level))
   },
 
   /** 방을 떠날 때 정리. 소켓과 마찬가지로 화면 수명 밖에 있으므로 명시적으로 꺼야 함 */

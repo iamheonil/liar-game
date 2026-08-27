@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { sound } from '@/lib/audio'
 import { PHASE_META } from '@/lib/phase'
-import { loadSoundEnabled, saveSoundEnabled } from '@/lib/storage'
 import type { RoomView } from '@/types/protocol'
 
 /**
@@ -14,6 +13,9 @@ import type { RoomView } from '@/types/protocol'
  * 이 훅은 서버 스냅샷을 이전 값과 비교해 '순간'을 찾아내고, 그 순간에만 번쩍임과 소리를 한 번씩
  * 터뜨림. 판정은 여전히 서버가 하고 여기서는 바뀐 지점을 읽기만 하므로, 연출이 게임 진행에
  * 영향을 줄 여지가 없음.
+ *
+ * 켬/끔과 음량은 여기서 다루지 않음. "언제 무슨 소리를 낼지"와 "얼마나 크게 낼지"는 서로
+ * 다른 관심사라 useSoundSettings 로 갈라 두었음.
  */
 
 /** 심장박동이 가장 느릴 때와 가장 빠를 때의 간격(ms) */
@@ -36,23 +38,9 @@ export interface Tension {
   dread: boolean
   /** 맥박 주기(ms). 심장박동 소리와 같은 값을 써서 눈과 귀가 어긋나지 않게 함 */
   beatMs: number
-  soundOn: boolean
-  toggleSound: () => void
-}
-
-/** 브라우저는 사용자가 한 번 건드리기 전에는 소리를 내주지 않으므로, 첫 입력을 한 번만 붙잡음 */
-function useAudioUnlock(soundOn: boolean): void {
-  useEffect(() => {
-    if (!soundOn) return
-    const open = () => sound.unlock()
-    const events = ['pointerdown', 'keydown', 'touchstart'] as const
-    events.forEach((name) => window.addEventListener(name, open, { once: true, passive: true }))
-    return () => events.forEach((name) => window.removeEventListener(name, open))
-  }, [soundOn])
 }
 
 export function useTension(room: RoomView | null, meId: string, remaining: number | null): Tension {
-  const [soundOn, setSoundOn] = useState(loadSoundEnabled)
   const [flashKey, setFlashKey] = useState(0)
   const [flashTone, setFlashTone] = useState<FlashTone>('lamp')
   const [shakeKey, setShakeKey] = useState(0)
@@ -67,12 +55,6 @@ export function useTension(room: RoomView | null, meId: string, remaining: numbe
   const phase = game?.phase
   const meta = phase ? PHASE_META[phase] : null
   const tense = meta?.tense ?? false
-
-  useAudioUnlock(soundOn)
-
-  useEffect(() => {
-    sound.setEnabled(soundOn)
-  }, [soundOn])
 
   // 탭을 벗어나면 소리도 함께 물러남. 뒤에서 계속 울리는 드론만큼 성가신 것이 없음
   useEffect(() => {
@@ -173,20 +155,11 @@ export function useTension(room: RoomView | null, meId: string, remaining: numbe
     sound.setHeartbeat(beating ? beatMs : null)
   }, [beating, beatMs])
 
-  const toggleSound = useCallback(() => {
-    setSoundOn((on) => {
-      saveSoundEnabled(!on)
-      return !on
-    })
-  }, [])
-
   return {
     flashKey,
     flashTone,
     shakeKey,
     dread: beating && remaining !== null && remaining <= DREAD_FROM,
     beatMs,
-    soundOn,
-    toggleSound,
   }
 }

@@ -449,3 +449,70 @@ input {
     transform: rotate(0deg);
   }
 }
+
+/* ------------------------------------------------------------------ 손잡이 */
+
+/*
+ * 음량 막대.
+ *
+ * 기본 모양이 밝은 회색이라 어두운 방에 그대로 두면 혼자 튐. 트랙은 남은 시간 막대와 같은
+ * 두께로, 손잡이는 전구색 점으로 맞춤. 웹킷과 파이어폭스가 가상 요소 이름을 따로 쓰는데
+ * 한쪽이라도 모르는 선택자가 섞이면 규칙 전체를 버리므로 반드시 따로 씀.
+ */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px; /* 손가락으로 잡을 수 있게. 보이는 트랙은 그 안에 얇게 그림 */
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider:disabled {
+  cursor: not-allowed;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ink-900);
+  border: 1px solid var(--edge);
+}
+
+.slider::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ink-900);
+  border: 1px solid var(--edge);
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px; /* 트랙 가운데로 올림. 웹킷은 자동 정렬을 해 주지 않음 */
+  border-radius: 999px;
+  background: var(--lamp-500);
+  border: 1px solid var(--lamp-400);
+  box-shadow: 0 0 10px -2px color-mix(in oklab, var(--lamp-500) 70%, transparent);
+}
+
+.slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--lamp-500);
+  border: 1px solid var(--lamp-400);
+  box-shadow: 0 0 10px -2px color-mix(in oklab, var(--lamp-500) 70%, transparent);
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--lamp-400);
+  outline-offset: 2px;
+}
+
+.slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--lamp-400);
+  outline-offset: 2px;
+}

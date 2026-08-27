@@ -13,6 +13,7 @@ import { WaitingControls } from '@/components/room/WaitingControls'
 import { TensionLayer } from '@/components/scene/TensionLayer'
 import { Toast } from '@/components/ui/Toast'
 import { useCountdown } from '@/hooks/useCountdown'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { useTension } from '@/hooks/useTension'
 import { ApiError, joinRoom, leaveRoom } from '@/lib/api'
 import { loadNickname, loadTicket, saveTicket } from '@/lib/storage'
@@ -88,6 +89,7 @@ export function RoomPage() {
 
   const remaining = useCountdown(room?.game?.phaseEndsAt, clockSkew)
   const tension = useTension(room, ticket?.playerId ?? '', remaining)
+  const soundSettings = useSoundSettings()
 
   if (joinError) {
     return (
@@ -131,8 +133,7 @@ export function RoomPage() {
             connected={connected}
             canLeave={room.status !== 'PLAYING'}
             onLeave={handleLeave}
-            soundOn={tension.soundOn}
-            onToggleSound={tension.toggleSound}
+            sound={soundSettings}
           />
         </div>
       </div>
