@@ -62,6 +62,22 @@ body {
   padding-bottom: var(--safe-bottom);
 }
 
+/*
+ * 스크롤이 화면 안쪽에서만 일어나는 전체 화면.
+ *
+ * .screen 은 min-height 라 내용이 많으면 그만큼 늘어남. 그러면 자식의 flex-1 + overflow-y-auto
+ * 가 영영 발동하지 않고 문서 전체가 스크롤되어, 하단에 고정해 둔 입력 바까지 같이 밀려 올라감.
+ * 게임 화면은 '지금 할 수 있는 행동'이 항상 같은 자리에 있어야 하므로 높이를 못박음.
+ *
+ * 아래쪽 여백을 두지 않는 이유는, 하단 바가 자기 padding 에 --safe-bottom 을 이미 더하고 있어
+ * 여기서도 더하면 홈 인디케이터 영역만큼 두 번 밀리기 때문임.
+ */
+.screen-fixed {
+  height: 100vh;
+  height: 100dvh;
+  padding-top: var(--safe-top);
+}
+
 button {
   font-family: inherit;
   color: inherit;
@@ -332,5 +348,104 @@ input {
   }
   50% {
     opacity: 0.45;
+  }
+}
+
+/* ------------------------------------------------------------------ 긴장 */
+
+/*
+ * 순간 연출.
+ *
+ * 지속되는 것은 없고 전부 짧게 지나감. 3분짜리 자유토론을 여러 판 도는 게임이라, 계속 움직이는
+ * 화면은 긴장이 아니라 피로가 됨. 그래서 '무엇이 결정되는 순간'에만 한 번씩 터뜨림.
+ *
+ * prefers-reduced-motion 이 켜져 있으면 위쪽 전역 규칙이 이 애니메이션들도 함께 죽임. 그때
+ * 요소가 어떤 모습으로 남는지가 중요해서, dread 는 기본 불투명도를 은은한 값으로 두어 정지
+ * 상태에서도 어색하지 않게 함.
+ */
+
+/* 단계가 바뀌는 순간 천장 전구가 한 번 크게 번짐 */
+@keyframes phase-flash {
+  0% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 되돌릴 수 없는 결정을 앞둔 마지막 10초. 가장자리가 심장박동과 같은 주기로 조여 옴 */
+@keyframes dread {
+  0%,
+  100% {
+    opacity: 0.14;
+  }
+  28% {
+    opacity: 0.44;
+  }
+}
+
+/*
+ * 지목이 확정되거나 처형이 가결될 때 전구가 한 번 흔들림.
+ *
+ * 화면 전체가 아니라 전구만 흔드는 이유가 둘 있음. 하나는 절제고, 다른 하나는 .atmosphere 의
+ * 조명이 position: fixed 라서 조상 요소에 transform 이 걸리면 기준점이 통째로 어긋나기 때문임.
+ * 천장에 매달린 물건이므로 회전 기준도 위쪽 가운데에 둠.
+ */
+.lamp-shake {
+  transform-origin: 50% 0%;
+  animation: lamp-shake 900ms var(--ease-out-expo);
+}
+
+/*
+ * 좁은 화면에는 전구 장면이 없으므로(좌석 목록이 그 자리를 씀) 좌석 무리를 대신 흔듦.
+ * 매달린 물건이 아니라 책상 위 물건이 흔들리는 것이므로 회전 대신 좌우로 튕김.
+ */
+.jolt {
+  animation: jolt 520ms var(--ease-out-expo);
+}
+
+@keyframes jolt {
+  0% {
+    transform: translateX(0);
+  }
+  14% {
+    transform: translateX(-5px);
+  }
+  36% {
+    transform: translateX(4px);
+  }
+  58% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes lamp-shake {
+  0% {
+    transform: rotate(0deg);
+  }
+  12% {
+    transform: rotate(1.5deg);
+  }
+  31% {
+    transform: rotate(-1.1deg);
+  }
+  52% {
+    transform: rotate(0.6deg);
+  }
+  74% {
+    transform: rotate(-0.3deg);
+  }
+  100% {
+    transform: rotate(0deg);
   }
 }

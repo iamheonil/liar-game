@@ -19,6 +19,9 @@ interface PlayerSeatProps extends SeatState {
  *
  * 상태를 색으로 구분함. 지금 말할 차례면 등불색 테두리가 켜지고, 지목당하면 핏빛으로 바뀜.
  * 연결이 끊긴 사람은 흐려지고, 게임에서 빠진 사람은 이름에 줄이 그어짐.
+ *
+ * 8명이 모두 앉는 화면에서 좌석 높이가 그대로 여덟 배가 되므로 한 줄로 못박음. 점수와 상태는
+ * 같은 자리를 나눠 쓰고, 둘 다 있어야 할 일은 없음 — 빠진 사람의 점수는 이미 의미가 없으므로.
  */
 export function PlayerSeat({
   player,
@@ -45,7 +48,7 @@ export function PlayerSeat({
       : 'none'
 
   const classes = [
-    'panel-flat relative flex w-full items-center gap-2.5 px-3 py-2 text-left',
+    'panel-flat relative flex w-full items-center gap-2 px-2.5 py-1.5 text-left',
     'transition-[transform,border-color,box-shadow] duration-200',
     selectable ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0' : '',
     player.abandoned ? 'opacity-35' : player.connected ? '' : 'opacity-55',
@@ -60,30 +63,29 @@ export function PlayerSeat({
         />
       )}
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`truncate text-sm font-medium ${player.abandoned ? 'line-through' : ''}`}
-            style={{ color: isMe ? 'var(--lamp-400)' : 'var(--bone-100)' }}
-          >
-            {player.nickname}
-          </span>
-          {player.host && <span className="text-[0.6rem] text-lamp-600">방장</span>}
-          {isMe && <span className="text-[0.6rem] text-bone-700">나</span>}
-        </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[0.68rem] text-bone-700">
-          <span className="tabular">{player.score}점</span>
-          {player.abandoned ? (
-            <span style={{ color: 'var(--blood-400)' }}>이탈</span>
-          ) : (
-            !player.connected && <span>연결 끊김</span>
-          )}
-        </div>
-      </div>
+      <span
+        className={`min-w-0 flex-1 truncate text-sm font-medium ${player.abandoned ? 'line-through' : ''}`}
+        style={{ color: isMe ? 'var(--lamp-400)' : 'var(--bone-100)' }}
+      >
+        {player.nickname}
+      </span>
+
+      {player.host && <span className="shrink-0 text-[0.6rem] text-lamp-600">방장</span>}
+      {isMe && <span className="shrink-0 text-[0.6rem] text-bone-700">나</span>}
+
+      {player.abandoned ? (
+        <span className="shrink-0 text-[0.65rem]" style={{ color: 'var(--blood-400)' }}>
+          이탈
+        </span>
+      ) : !player.connected ? (
+        <span className="shrink-0 text-[0.65rem] text-bone-700">끊김</span>
+      ) : (
+        <span className="tabular shrink-0 text-[0.68rem] text-bone-700">{player.score}점</span>
+      )}
 
       {voteCount > 0 && (
         <span
-          className="tabular flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold"
+          className="tabular flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[0.7rem] font-bold"
           style={{ background: 'var(--blood-600)', color: 'var(--bone-100)' }}
           aria-label={`${voteCount}표`}
         >

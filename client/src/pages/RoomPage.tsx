@@ -4,13 +4,16 @@ import { ActionBar } from '@/components/room/ActionBar'
 import { ChatPanel } from '@/components/room/ChatPanel'
 import { GameResultOverlay } from '@/components/room/GameResultOverlay'
 import { HintBoard } from '@/components/room/HintBoard'
+import { LogTabs } from '@/components/room/LogTabs'
 import { PlayerRing } from '@/components/room/PlayerRing'
 import { RoomHeader } from '@/components/room/RoomHeader'
 import { RoundResultOverlay } from '@/components/room/RoundResultOverlay'
 import { SecretCard } from '@/components/room/SecretCard'
 import { WaitingControls } from '@/components/room/WaitingControls'
+import { TensionLayer } from '@/components/scene/TensionLayer'
 import { Toast } from '@/components/ui/Toast'
 import { useCountdown } from '@/hooks/useCountdown'
+import { useTension } from '@/hooks/useTension'
 import { ApiError, joinRoom, leaveRoom } from '@/lib/api'
 import { loadNickname, loadTicket, saveTicket } from '@/lib/storage'
 import { useRoomStore } from '@/store/useRoomStore'
@@ -84,6 +87,7 @@ export function RoomPage() {
   }, [room?.status])
 
   const remaining = useCountdown(room?.game?.phaseEndsAt, clockSkew)
+  const tension = useTension(room, ticket?.playerId ?? '', remaining)
 
   if (joinError) {
     return (
@@ -117,20 +121,26 @@ export function RoomPage() {
   }
 
   return (
-    <main className="screen atmosphere flex flex-col">
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-3 py-3 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-          <div className="lg:col-span-2">
-            <RoomHeader
-              room={room}
-              remaining={remaining}
-              connected={connected}
-              canLeave={room.status !== 'PLAYING'}
-              onLeave={handleLeave}
-            />
-          </div>
+    <main className="screen-fixed atmosphere flex flex-col overflow-hidden">
+      {/* 머리: 항상 같은 자리. 스크롤에 밀려나지 않음 */}
+      <div className="shrink-0 px-3 pt-3">
+        <div className="mx-auto w-full max-w-6xl">
+          <RoomHeader
+            room={room}
+            remaining={remaining}
+            connected={connected}
+            canLeave={room.status !== 'PLAYING'}
+            onLeave={handleLeave}
+            soundOn={tension.soundOn}
+            onToggleSound={tension.toggleSound}
+          />
+        </div>
+      </div>
 
-          <div className="flex min-w-0 flex-col gap-3">
+      {/* 본문: 남는 높이를 전부 받아 씀. 스크롤은 이 안쪽 목록에서만 일어남 */}
+      <div className="min-h-0 flex-1 px-3 py-3">
+        <div className="mx-auto grid h-full w-full max-w-6xl grid-rows-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="flex min-h-0 min-w-0 flex-col gap-3">
             {game && secret && (
               <SecretCard secret={secret} emphasized={game.phase === 'ROLE_REVEAL'} />
             )}
@@ -139,11 +149,13 @@ export function RoomPage() {
               players={room.players}
               meId={meId}
               game={game}
+              shakeKey={tension.shakeKey}
               onVote={(targetId) => send('vote', { targetId })}
             />
 
             {game ? (
               <HintBoard
+                className="hidden lg:flex lg:min-h-[140px] lg:basis-[36%]"
                 hints={game.hints}
                 players={room.players}
                 turnPlayerId={game.turnPlayerId}
@@ -152,24 +164,38 @@ export function RoomPage() {
             ) : (
               <WaitingControls room={room} meId={meId} onSend={send} />
             )}
+
+            {/* 좁은 화면에서는 힌트와 대화가 한 자리를 탭으로 나눠 씀 */}
+            <LogTabs
+              className="min-h-0 flex-1 lg:hidden"
+              hints={game?.hints ?? []}
+              players={room.players}
+              turnPlayerId={game?.turnPlayerId}
+              meId={meId}
+              messages={chat}
+              phase={game?.phase}
+            />
           </div>
 
-          <ChatPanel
-            messages={chat}
-            meId={meId}
-            className="h-72 min-w-0 lg:h-[calc(100dvh-13rem)]"
-          />
+          <ChatPanel className="hidden min-h-0 lg:flex" messages={chat} meId={meId} />
         </div>
       </div>
 
       <div
-        className="border-t border-[var(--edge)] bg-ink-900/92 px-3 py-3 backdrop-blur"
+        className="shrink-0 border-t border-[var(--edge)] bg-ink-900/92 px-3 py-3 backdrop-blur"
         style={{ paddingBottom: 'calc(0.75rem + var(--safe-bottom))' }}
       >
         <div className="mx-auto w-full max-w-6xl">
           <ActionBar room={room} meId={meId} onSend={send} />
         </div>
       </div>
+
+      <TensionLayer
+        flashKey={tension.flashKey}
+        flashTone={tension.flashTone}
+        dread={tension.dread}
+        beatMs={tension.beatMs}
+      />
 
       {game?.phase === 'ROUND_RESULT' && game.lastRound && (
         <RoundResultOverlay result={game.lastRound} players={room.players} meId={meId} />
