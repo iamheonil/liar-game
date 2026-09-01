@@ -13,6 +13,7 @@ public record RoundResultView(
         boolean liarCaught,
         String liarGuess,
         boolean liarGuessCorrect,
+        String ending,
         String winner,
         Map<String, Integer> awardedPoints) {
 }

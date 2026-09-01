@@ -17,6 +17,7 @@ import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { useTension } from '@/hooks/useTension'
 import { ApiError, joinRoom, leaveRoom } from '@/lib/api'
 import { loadNickname, loadTicket, saveTicket } from '@/lib/storage'
+import { pendingActionOf } from '@/lib/turn'
 import { useRoomStore } from '@/store/useRoomStore'
 
 /**
@@ -115,6 +116,8 @@ export function RoomPage() {
   const meId = ticket.playerId
   const game = room.game
   const isHost = room.hostId === meId
+  // 내가 무언가를 해야 하는 순간에는 하단 입력 바 전체를 등불색으로 밝혀 시선을 끌어옴
+  const awaitingMe = pendingActionOf(room, meId) !== null
 
   const handleLeave = () => {
     void leaveRoom(room.roomId, meId).catch(() => undefined)
@@ -183,11 +186,11 @@ export function RoomPage() {
       </div>
 
       <div
-        className="shrink-0 border-t border-[var(--edge)] bg-ink-900/92 px-3 py-3 backdrop-blur"
+        className={`action-dock shrink-0 px-3 py-3 backdrop-blur ${awaitingMe ? "is-awaiting" : ""}`}
         style={{ paddingBottom: 'calc(0.75rem + var(--safe-bottom))' }}
       >
         <div className="mx-auto w-full max-w-6xl">
-          <ActionBar room={room} meId={meId} onSend={send} />
+          <ActionBar room={room} meId={meId} remaining={remaining} onSend={send} />
         </div>
       </div>
 
@@ -199,7 +202,12 @@ export function RoomPage() {
       />
 
       {game?.phase === 'ROUND_RESULT' && game.lastRound && (
-        <RoundResultOverlay result={game.lastRound} players={room.players} meId={meId} />
+        <RoundResultOverlay
+          result={game.lastRound}
+          players={room.players}
+          meId={meId}
+          remaining={remaining}
+        />
       )}
 
       {game?.phase === 'GAME_RESULT' && game.finalResult && (

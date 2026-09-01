@@ -148,6 +148,7 @@ public class RoomViewAssembler {
                 outcome.liarCaught(),
                 outcome.liarGuess(),
                 outcome.liarGuessCorrect(),
+                outcome.ending().name(),
                 outcome.winner().name(),
                 idKeyedMap(outcome.awardedPoints(), Function.identity()));
     }

@@ -126,7 +126,13 @@ export function useTension(room: RoomView | null, meId: string, remaining: numbe
     const turn = game?.turnPlayerId
     if (prevTurn.current === turn) return
     prevTurn.current = turn
-    if (primed.current && turn && turn === meId) sound.cue('turn')
+    if (primed.current && turn && turn === meId) {
+      sound.cue('turn')
+      // 힌트 단계는 발언자가 바뀌어도 단계는 그대로라 위쪽 단계 전이 효과가 돌지 않음.
+      // 자기 차례가 온 것은 놓치면 안 되는 순간이라 여기서 한 번 더 번쩍여 줌
+      setFlashTone('lamp')
+      setFlashKey((key) => key + 1)
+    }
   }, [game?.turnPlayerId, meId])
 
   useEffect(() => {

@@ -516,3 +516,59 @@ input {
   outline: 2px solid var(--lamp-400);
   outline-offset: 2px;
 }
+
+/* ------------------------------------------------ 내 차례 강조 */
+
+/*
+ * 하단 입력 바.
+ *
+ * 평소에는 배경에 가만히 붙어 있다가, 내가 무언가를 해야 하는 순간에만 위쪽 테두리가 등불색으로
+ * 살아나고 아래에서 빛이 스며 올라옴. 처음 하는 사람은 "입력창이 생겼다"는 것만으로는 자기
+ * 차례인 줄 모르고 지나가기 때문에, 화면에서 가장 큰 면적이 한 번에 바뀌어야 알아챔.
+ */
+.action-dock {
+  border-top: 1px solid var(--edge);
+  background: color-mix(in oklab, var(--ink-900) 92%, transparent);
+  transition:
+    border-color var(--dur-base) ease,
+    background-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
+}
+
+.action-dock.is-awaiting {
+  border-top-color: var(--lamp-500);
+  background:
+    linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--lamp-600) 12%, transparent) 0%,
+      transparent 70%
+    ),
+    color-mix(in oklab, var(--ink-900) 92%, transparent);
+  box-shadow: 0 -14px 34px -22px color-mix(in oklab, var(--lamp-500) 90%, transparent);
+}
+
+/* 안내 배너. 테두리가 천천히 숨 쉬어 "지금 여기"를 계속 가리킴 */
+.turn-callout {
+  border: 1px solid color-mix(in oklab, var(--lamp-500) 55%, transparent);
+  background: color-mix(in oklab, var(--lamp-700) 16%, var(--ink-800));
+  animation: callout-breathe 2.4s ease-in-out infinite;
+}
+
+.turn-callout-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--lamp-400);
+  box-shadow: 0 0 12px 2px color-mix(in oklab, var(--lamp-400) 70%, transparent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes callout-breathe {
+  0%,
+  100% {
+    border-color: color-mix(in oklab, var(--lamp-500) 55%, transparent);
+  }
+  50% {
+    border-color: color-mix(in oklab, var(--lamp-400) 90%, transparent);
+  }
+}

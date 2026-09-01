@@ -21,6 +21,14 @@ export type GamePhaseName =
 
 export type WinnerName = 'CITIZEN' | 'LIAR' | 'NONE'
 
+/** 라운드가 어떻게 끝났는지. 승패만으로는 설명되지 않는 경위를 담음 */
+export type RoundEnding =
+  | 'NO_MAJORITY'
+  | 'ACQUITTED'
+  | 'WRONG_EXECUTION'
+  | 'LIAR_EXECUTED'
+  | 'ABORTED'
+
 export type ChatKind = 'CHAT' | 'SYSTEM' | 'DEFENSE'
 
 export interface PlayerView {
@@ -49,6 +57,7 @@ export interface RoundResultView {
   liarCaught: boolean
   liarGuess?: string
   liarGuessCorrect: boolean
+  ending: RoundEnding
   winner: WinnerName
   awardedPoints: Record<string, number>
 }

@@ -1,10 +1,14 @@
 import { IdleNotice } from './IdleNotice'
 import { TextSubmitRow } from './TextSubmitRow'
+import { TurnCallout } from './TurnCallout'
+import { pendingActionOf } from '@/lib/turn'
 import type { RoomView } from '@/types/protocol'
 
 interface ActionBarProps {
   room: RoomView
   meId: string
+  /** 현재 단계의 남은 초. 내 차례 안내에 함께 띄움 */
+  remaining: number | null
   onSend: (action: string, body?: unknown) => void
 }
 
@@ -18,8 +22,30 @@ const MAX_CHAT = 200
  *
  * 라이어 게임은 단계마다 허용되는 행동이 완전히 달라서, 모든 입력을 늘어놓으면 무엇을 눌러야
  * 하는지 헷갈림. 그래서 단계별로 필요한 입력 하나만 남기고 나머지는 아예 그리지 않음.
+ *
+ * 입력창이 생기는 것만으로는 신호가 약해서 처음 하는 사람은 자기 차례인 줄 모르고 지나감.
+ * 그래서 내가 행동해야 하는 순간에는 입력창 위에 무엇을 하면 되는지 문장으로 한 번 더 말해 줌.
  */
-export function ActionBar({ room, meId, onSend }: ActionBarProps) {
+export function ActionBar({ room, meId, remaining, onSend }: ActionBarProps) {
+  const pending = pendingActionOf(room, meId)
+
+  return (
+    <div className="flex flex-col gap-2">
+      {pending && <TurnCallout action={pending} remaining={remaining} />}
+      <ActionBody room={room} meId={meId} onSend={onSend} />
+    </div>
+  )
+}
+
+function ActionBody({
+  room,
+  meId,
+  onSend,
+}: {
+  room: RoomView
+  meId: string
+  onSend: (action: string, body?: unknown) => void
+}) {
   const game = room.game
   const me = room.players.find((player) => player.id === meId)
 
@@ -33,7 +59,12 @@ export function ActionBar({ room, meId, onSend }: ActionBarProps) {
   )
 
   if (me?.abandoned) {
-    return <IdleNotice text="연결이 끊겨 이번 게임에서 빠졌습니다. 다음 게임부터 참여할 수 있습니다." tone="tense" />
+    return (
+      <IdleNotice
+        text="연결이 끊겨 이번 게임에서 빠졌습니다. 다음 게임부터 참여할 수 있습니다."
+        tone="tense"
+      />
+    )
   }
 
   if (!game) {
@@ -82,14 +113,10 @@ export function ActionBar({ room, meId, onSend }: ActionBarProps) {
       const votedName = room.players.find((player) => player.id === myVote)?.nickname
       return (
         <div className="flex flex-col gap-2">
-          <IdleNotice
-            text={
-              votedName
-                ? `${votedName} 님 지목함 — 시간 안에는 바꿀 수 있습니다`
-                : '위 참가자 목록에서 라이어로 의심되는 사람을 누르세요.'
-            }
-            tone="tense"
-          />
+          {/* 아직 안 던진 사람에게는 위쪽 안내가 이미 같은 말을 하고 있으므로 던진 뒤에만 띄움 */}
+          {votedName && (
+            <IdleNotice text={`${votedName} 님 지목함 — 시간 안에는 바꿀 수 있습니다`} tone="tense" />
+          )}
           {chatRow()}
         </div>
       )

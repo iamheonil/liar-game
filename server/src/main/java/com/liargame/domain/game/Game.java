@@ -277,7 +277,7 @@ public class Game {
             return;
         }
         if (round.isLiar(leaver)) {
-            endRound(now, null, false, null, false, Winner.NONE);
+            endRound(now, null, false, null, false, RoundEnding.ABORTED, Winner.NONE);
             return;
         }
         switch (phase) {
@@ -299,7 +299,7 @@ public class Game {
             }
             case DEFENSE, FINAL_VOTE -> {
                 if (leaver.equals(round.accusedId())) {
-                    endRound(now, null, false, null, false, Winner.LIAR);
+                    endRound(now, null, false, null, false, RoundEnding.ACQUITTED, Winner.LIAR);
                 } else if (phase == GamePhase.FINAL_VOTE
                         && round.survival().castCount() >= finalVoteElectorate()) {
                     resolveFinalVote(now);
@@ -345,7 +345,7 @@ public class Game {
     private void resolveAccusation(Instant now) {
         Optional<PlayerId> accused = round.accusation().majorityOf(activePlayers().size());
         if (accused.isEmpty()) {
-            endRound(now, null, false, null, false, Winner.LIAR);
+            endRound(now, null, false, null, false, RoundEnding.NO_MAJORITY, Winner.LIAR);
             return;
         }
         round.accuse(accused.get());
@@ -365,21 +365,21 @@ public class Game {
             if (round.voteAttempt() < rules.maxVoteAttempts()) {
                 beginVote(now);
             } else {
-                endRound(now, accused, false, null, false, Winner.LIAR);
+                endRound(now, accused, false, null, false, RoundEnding.ACQUITTED, Winner.LIAR);
             }
             return;
         }
         if (round.isLiar(accused)) {
             enter(GamePhase.LIAR_GUESS, now);
         } else {
-            endRound(now, accused, false, null, false, Winner.LIAR);
+            endRound(now, accused, false, null, false, RoundEnding.WRONG_EXECUTION, Winner.LIAR);
         }
     }
 
     private void resolveLiarGuess(Instant now) {
         String guess = round.liarGuess();
         boolean correct = matchesCitizenWord(guess);
-        endRound(now, round.accusedId(), true, guess, correct,
+        endRound(now, round.accusedId(), true, guess, correct, RoundEnding.LIAR_EXECUTED,
                 correct ? Winner.LIAR : Winner.CITIZEN);
     }
 
@@ -399,6 +399,7 @@ public class Game {
             boolean liarCaught,
             String liarGuess,
             boolean liarGuessCorrect,
+            RoundEnding ending,
             Winner winner) {
         Map<PlayerId, Integer> awarded = awardPoints(winner);
         scoreBoard.award(awarded);
@@ -412,6 +413,7 @@ public class Game {
                 liarCaught,
                 liarGuess,
                 liarGuessCorrect,
+                ending,
                 winner,
                 awarded));
         enter(GamePhase.ROUND_RESULT, now);
